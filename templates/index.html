@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧠 AI Face Similarity Detector</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fb;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .upload-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .upload-box {
+            flex: 1;
+            border: 2px dashed #4361ee;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background-color: white;
+        }
+        .upload-box h3 {
+            margin-top: 0;
+            color: #4361ee;
+        }
+        .preview-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        .preview-container img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+        }
+        input[type="file"] {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        button {
+            background-color: #4361ee;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 20px auto;
+            width: 80%;
+        }
+        button:hover {
+            background-color: #3f37c9;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #result {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            display: none;
+        }
+        .similarity-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .verdict {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .verdict.same {
+            background-color: #d1f0dd;
+            color: #0d6e3d;
+        }
+        .verdict.possibly {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .verdict.different {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .similarity-meter {
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .similarity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffd166, #06d6a0);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .image-item {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            background: white;
+        }
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        .image-item p {
+            margin: 5px 0;
+            padding: 0 5px;
+            font-size: 0.8rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .image-actions {
+            display: flex;
+            justify-content: space-around;
+            padding: 5px;
+        }
+        .image-actions button {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            margin: 2px;
+            width: auto;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        #status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            display: none;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        @media (max-width: 768px) {
+            .upload-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🧠 AI Face Similarity Detector</h1>
+        <p>Upload two face images to determine if they are of the same person</p>
+    </header>
+    
+    <div class="container">
+        <div class="upload-section">
+            <div class="upload-box">
+                <h3>Image 1</h3>
+                <input type="file" id="file1" accept="image/*">
+                <div class="preview-container">
+                    <img id="preview1" src="" alt="Preview 1" style="display: none;">
+                </div>
+                <button id="upload1" onclick="uploadImage(1)">Upload Image 1</button>
+            </div>
+            
+            <div class="upload-box">
+                <h3>Image 2</h3>
+                <input type="file" id="file2" accept="image/*">
+                <div class="preview-container">
+                    <img id="preview2" src="" alt="Preview 2" style="display: none;">
+                </div>
+                <button id="upload2" onclick="uploadImage(2)">Upload Image 2</button>
+            </div>
+        </div>
+        
+        <div id="status"></div>
+        
+        <button id="compareBtn" onclick="compareImages()" disabled>Compare Faces</button>
+        
+        <div id="result">
+            <h2>Comparison Result</h2>
+            <div class="similarity-score">Similarity: <span id="percentage">0</span>%</div>
+            <div class="similarity-meter">
+                <div class="similarity-fill" id="similarityFill" style="width: 0%"></div>
+            </div>
+            <div class="verdict" id="verdict">-</div>
+        </div>
+        
+        <div class="uploaded-images">
+            <h3>Uploaded Images</h3>
+            <div class="image-list" id="imageList">
+                <!-- Images will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedImages = [];
+        
+        // Preview image when selected
+        document.getElementById('file1').addEventListener('change', function(e) {
+            previewImage(e, 'preview1');
+        });
+        
+        document.getElementById('file2').addEventListener('change', function(e) {
+            previewImage(e, 'preview2');
+        });
+        
+        function previewImage(event, previewId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function uploadImage(imageNumber) {
+            const fileInput = document.getElementById('file' + imageNumber);
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('Please select an image first', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus('Error: ' + data.error, 'error');
+                } else {
+                    showStatus('Image ' + imageNumber + ' uploaded successfully', 'success');
+                    loadImages();
+                    checkEnableCompare();
+                }
+            })
+            .catch(error => {
+                showStatus('Error uploading image: ' + error, 'error');
+            });
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'alert-' + type;
+            statusDiv.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        function checkEnableCompare() {
+            const compareBtn = document.getElementById('compareBtn');
+            compareBtn.disabled = uploadedImages.length < 2;
+        }
+        
+        function loadImages() {
+            fetch('/uploads')
+            .then(response => response.json())
+            .then(data => {
+                uploadedImages = data.images;
+                const imageList = document.getElementById('imageList');
+                imageList.innerHTML = '';
+                
+                data.images.forEach(image => {
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'image-item';
+                    imageItem.innerHTML = `
+                        <img src="/uploads/${image}" alt="${image}">
+                        <p>${image}</p>
+                        <div class="image-actions">
+                            <button class="btn-danger" onclick="deleteImage('${image}')">Delete</button>
+                        </div>
+                    `;
+                    imageList.appendChild(imageItem);
+                });
+                
+                checkEnableCompare();
+            });
+        }
+        
+        function deleteImage(filename) {
+            if (confirm('Are you sure you want to delete ' + filename + '?')) {
+                fetch('/delete/' + filename, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showStatus('Error: ' + data.error, 'error');
+                    } else {
+                        showStatus(data.message, 'success');
+                        loadImages();
+                    }
+                })
+                .catch(error => {
+                    showStatus('Error deleting image: ' + error, 'error');
+                });
+            }
+        }
+        
+        function compareImages() {
+            if (uploadedImages.length < 2) {
+                showStatus('Please upload at least two images', 'error');
+                return;
+            }
+            
+            const image1 = uploadedImages[0];
+            const image2 = uploadedImages[1];
+            
+            fetch('/compare', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    image1: image1,
+                    image2: image2
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus('Error: ' + data.error, 'error');
+                } else {
+                    // Update the result display
+                    document.getElementById('percentage').textContent = data.percentage.toFixed(2);
+                    document.getElementById('similarityFill').style.width = data.percentage + '%';
+                    
+                    // Update verdict with appropriate styling
+                    const verdictElement = document.getElementById('verdict');
+                    verdictElement.textContent = data.verdict;
+                    
+                    // Remove all classes
+                    verdictElement.className = 'verdict';
+                    
+                    // Add appropriate class based on verdict
+                    if (data.verdict.includes('Same Person') || data.verdict.includes('Highly Similar')) {
+                        verdictElement.classList.add('same');
+                    } else if (data.verdict.includes('Possibly')) {
+                        verdictElement.classList.add('possibly');
+                    } else {
+                        verdictElement.classList.add('different');
+                    }
+                    
+                    // Show the result
+                    document.getElementById('result').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                showStatus('Error comparing images: ' + error, 'error');
+            });
+        }
+        
+        // Load images when page loads
+        window.onload = function() {
+            loadImages();
+        };
+    </script>
+</body>
+</html>
